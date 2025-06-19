@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Go Energy</title>
+    <style>
+        .logo {
+            width: 300px;
+            height: 300px;
+            margin: 40px auto 0;
+        }
+
+        .logo img {
+            width: 100%;
+        }
+
+        .module {
+            text-align: center;
+            padding: 0 20px;
+            margin: 0px auto;
+            color: #000;
+        }
+
+        .module .content {
+            margin-right: 20px;
+            text-align: center;
+        }
+
+        .module p {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+<div class="module">
+        <H2>选择要分割的Excel文件</H2>
+        <input type="file" id="file" accept=".xlsx">
+        <button id="executeBtn" type="button" onclick="submit()">开始分割</button>
+</div>
+<script>
+    // js on osInfo
+    ipc.on("osInfo", function (os) {
+        document.getElementById("osInfo").innerText = os;
+    });
+
+    ipc.on("error", function (msg) {
+        alert(`
+        错误!
+        ${msg}
+        `);
+    });
+    const executeBtn = document.getElementById("executeBtn");
+    function submit() {
+        let file = document.querySelector("input[type=file]").files[0];
+        executeBtn.disabled = true;
+        executeBtn.innerText = "正在处理...";
+        console.log(file);
+        let reader = new FileReader();
+        reader.addEventListener('load',   function (e) {
+            let fileByteArray = [];
+                let arrayBuffer = e.target.result,
+                    array = new Uint8Array(arrayBuffer);
+                for (let i = 0; i < array.length; i++) {
+                    fileByteArray.push(array[i]);
+                }
+            console.log(fileByteArray);
+            ipc.emit("select_file_return", [fileByteArray, file.name], function (result) {
+                executeBtn.disabled = false;
+                executeBtn.innerText = "开始分割";
+                if (!result) {
+                    return
+                }
+                console.log('result',result);
+                var bytes = data2ByteArray(result); // pass your byte response to this constructor
+                console.log('bytes',bytes);
+                var blob=new Blob([bytes], {type: "application/zip"});// change resultByte to bytes
+
+                var link=document.createElement('a');
+                link.href=window.URL.createObjectURL(blob);
+                link.download="spilt.zip";
+                link.click();
+            });
+        });
+        reader.readAsArrayBuffer(file);
+    }
+    function data2ByteArray(encode) {
+        var bstr = atob(encode), n = bstr.length, u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return u8arr;
+    }
+</script>
+</body>
+</html>
